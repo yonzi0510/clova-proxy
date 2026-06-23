@@ -1,41 +1,31 @@
 export const config = { maxDuration: 60 };
 
-export default async function handler(req) {
-  // CORS preflight 처리
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-    });
+    return res.status(204).end();
   }
-
   if (req.method !== 'POST') {
-    return new Response('Method Not Allowed', { status: 405 });
+    return res.status(405).end();
   }
 
-  const body = await req.arrayBuffer();
+  const chunks = [];
+  for await (const chunk of req) chunks.push(chunk);
+  const body = Buffer.concat(chunks);
 
   const resp = await fetch('https://naveropenapi.apigw.ntruss.com/recog/v1/stt?lang=Kor', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/octet-stream',
       'X-NCP-APIGW-API-KEY-ID': process.env.CLOVA_CLIENT_ID,
-      'X-NCP-APIGW-API-KEY':    process.env.CLOVA_CLIENT_SECRET,
+      'X-NCP-APIGW-API-KEY': process.env.CLOVA_CLIENT_SECRET,
     },
     body,
   });
 
   const data = await resp.json();
-
-  return new Response(JSON.stringify(data), {
-    status: resp.status,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-    },
-  });
+  return res.status(resp.status).json(data);
 }
