@@ -1,5 +1,7 @@
 {
   "functions": {
-    "api/stt.js": { "runtime": "edge" }
+    "api/stt.js": {
+      "maxDuration": 60
+    }
   }
 }
